@@ -1,7 +1,10 @@
 const Category = require("../models/Category.model");
 const Product = require("../models/Product.model");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 const { v4: uuidv4 } = require("uuid");
+const User = require("../models/User.model");
 
 const CheckProduct = async (req, res, next) => {
   const { Check } = req.body; // Assuming userId is provided in the request body
@@ -198,6 +201,57 @@ const getProductByIdController = async (req, res, next) => {
   }
 };
 
+// ? =========== auth ============
+
+const signupController = async (req, res) => {
+  const { username, phoneNumber, email, password } = req.body;
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({
+      username,
+      phoneNumber,
+      email,
+      password: hashedPassword,
+    });
+    await newUser.save();
+
+    const token = jwt.sign({ id: newUser._id }, "hello", {
+      expiresIn: "1h",
+    });
+
+    res.status(201).json({ message: "User created successfully", token });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const loginController = async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    const token = jwt.sign({ id: user._id }, "hello", {
+      expiresIn: "1h",
+    });
+
+    res.status(200).json({ message: "Login successful", token });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   CheckProduct,
   addCategoryController,
@@ -206,4 +260,6 @@ module.exports = {
   removeCategoryController,
   getProductController,
   getProductByIdController,
+  loginController,
+  signupController,
 };
