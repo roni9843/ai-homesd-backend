@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 
 const { v4: uuidv4 } = require("uuid");
 const User = require("../models/User.model");
+const Order = require("../models/Order.model");
 
 const CheckProduct = async (req, res, next) => {
   const { Check } = req.body; // Assuming userId is provided in the request body
@@ -38,31 +39,28 @@ const getAllCategoryController = async (req, res, next) => {
  *
  * ? add category
  */
-const addCategoryController = async (req, res, next) => {
-  const { categories } = req.body;
 
-  console.log(categories);
-  // Check if categories is an array
-  if (!Array.isArray(categories)) {
-    return res.status(400).json({ message: "Categories must be an array" });
+const addCategoryController = async (req, res, next) => {
+  const { category, image } = req.body;
+
+  // Check if category and image are provided
+  if (!category || !image) {
+    return res.status(400).json({ message: "Category and image are required" });
   }
 
   try {
-    // Iterate over the categories array using a for loop
+    // Create a new Category instance
+    const newCategory = new Category({ category, image });
 
-    for (let i = 0; i < categories.length; i++) {
-      // Create a new Category instance
-      const category = new Category({ category: categories[i] });
-
-      // Save the category to the database
-      await category.save();
-    }
+    // Save the category to the database
+    await newCategory.save();
 
     const getCategories = await Category.find(); // Fetch all categories
+
     // Send a success response
     res
       .status(201)
-      .json({ message: "Categories added successfully", getCategories });
+      .json({ message: "Category added successfully", getCategories });
   } catch (error) {
     // If an error occurs, pass it to the error handler
     next(error);
@@ -145,6 +143,42 @@ const postProductController = async (req, res, next) => {
   } catch (error) {
     // Handle any errors
     next(error);
+  }
+};
+
+/**
+ * ? get all product with there category
+ */
+
+const getAllCategoryWithProducts = async (req, res, next) => {
+  try {
+    // Fetch all categories
+    const categories = await Category.find();
+
+    // Fetch all products and group them by category
+    const products = await Product.find().populate("category");
+
+    // Group products by category
+    const categoryWithProducts = categories.map((category) => {
+      return {
+        category,
+        products: products.filter(
+          (product) =>
+            product.category._id.toString() === category._id.toString()
+        ),
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      data: categoryWithProducts,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
   }
 };
 
@@ -252,6 +286,88 @@ const loginController = async (req, res) => {
   }
 };
 
+// ? ================= user ===================
+
+const getTheUserController = async (req, res, next) => {
+  const userId = req.body.id; // Assuming user ID is passed in the body
+
+  try {
+    // Find user by ID and populate the orders
+    const user = await User.findById(userId).lean();
+
+    if (!user) {
+      return res.status(200).json({ user: null, orderHistory: [] });
+    }
+
+    // Find orders related to the user
+    const orders = await Order.find({ userId: userId }).lean();
+
+    res.status(200).json({ user, orderHistory: orders });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+// ? =================== order ==================
+
+const postOrderController = async (req, res, next) => {
+  const { userId, products, address, totalAmount, paymentMethod } = req.body;
+
+  console.log("log ->", userId, products, address, totalAmount, paymentMethod);
+
+  if (!userId || !products || !address || !totalAmount || !paymentMethod) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
+  const newOrder = new Order({
+    userId,
+    products,
+    address,
+    totalAmount,
+    paymentMethod,
+  });
+
+  try {
+    const savedOrder = await newOrder.save();
+    res.status(201).json(savedOrder);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+// Get Order by ID
+const getOrderByIdController = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id).populate(
+      "products.product"
+    );
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    res.json(order);
+  } catch (error) {
+    console.error("Error fetching order:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Update Order Status
+const updateOrderStatusController = async (req, res) => {
+  const { status } = req.body;
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    order.status = status;
+    await order.save();
+    res.json(order);
+  } catch (error) {
+    console.error("Error updating order:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 module.exports = {
   CheckProduct,
   addCategoryController,
@@ -262,4 +378,9 @@ module.exports = {
   getProductByIdController,
   loginController,
   signupController,
+  getTheUserController,
+  postOrderController,
+  updateOrderStatusController,
+  getOrderByIdController,
+  getAllCategoryWithProducts,
 };
