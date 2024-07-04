@@ -341,7 +341,10 @@ const getOrderByIdController = async (req, res) => {
   const { userId } = req.body;
 
   try {
-    const orders = await Order.find({ userId }).populate("products.product");
+    const orders = await Order.find({ userId })
+      .populate("products.product")
+      .sort({ createdAt: -1 });
+
     if (!orders.length) {
       return res.status(404).json({ message: "No orders found for this user" });
     }
