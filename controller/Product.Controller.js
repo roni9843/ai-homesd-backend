@@ -336,17 +336,18 @@ const postOrderController = async (req, res, next) => {
 };
 
 // Get Order by ID
+
 const getOrderByIdController = async (req, res) => {
+  const { userId } = req.body;
+
   try {
-    const order = await Order.findById(req.params.id).populate(
-      "products.product"
-    );
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
+    const orders = await Order.find({ userId }).populate("products.product");
+    if (!orders.length) {
+      return res.status(404).json({ message: "No orders found for this user" });
     }
-    res.json(order);
+    res.json(orders);
   } catch (error) {
-    console.error("Error fetching order:", error);
+    console.error("Error fetching orders:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

@@ -49,7 +49,7 @@ router.post("/getTheUser", getTheUserController);
 router.post("/postOrder", postOrderController);
 
 // Get order by ID
-router.get("/:id", getOrderByIdController);
+router.post("/getTheOrder", getOrderByIdController);
 
 // Update order status
 router.put("/:id/status", updateOrderStatusController);
