@@ -13,6 +13,7 @@ const {
   getOrderByIdController,
   updateOrderStatusController,
   getAllCategoryWithProducts,
+  editProfileController,
 } = require("../controller/Product.Controller");
 
 const router = require("express").Router();
@@ -44,6 +45,8 @@ router.post("/signup", signupController);
 // ? =============== user =============
 
 router.post("/getTheUser", getTheUserController);
+
+router.post("/updateUser", editProfileController);
 
 // ? ================== order ============
 router.post("/postOrder", postOrderController);

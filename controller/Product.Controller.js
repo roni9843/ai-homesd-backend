@@ -308,6 +308,28 @@ const getTheUserController = async (req, res, next) => {
   }
 };
 
+const editProfileController = async (req, res, next) => {
+  const userId = req.body.id; // Assuming user ID is passed in the body
+  const { username, email, phoneNumber } = req.body;
+
+  try {
+    // Find user by ID and update their profile
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { username, email, phoneNumber },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    next(error); // Pass error to the error handling middleware
+  }
+};
+
 // ? =================== order ==================
 
 const postOrderController = async (req, res, next) => {
@@ -387,4 +409,5 @@ module.exports = {
   updateOrderStatusController,
   getOrderByIdController,
   getAllCategoryWithProducts,
+  editProfileController,
 };
