@@ -14,11 +14,17 @@ const {
   updateOrderStatusController,
   getAllCategoryWithProducts,
   editProfileController,
+  getAllOrderController,
+  getOrderByOrderIdController,
+  getAllProductIdController,
+  getAllCategoryNameController,
 } = require("../controller/Product.Controller");
 
 const router = require("express").Router();
 
 router.post("/findAndCheckDue", CheckProduct);
+
+router.get("/getAllProductId", getAllProductIdController);
 
 router.get("/getAllCategoryWithProducts", getAllCategoryWithProducts);
 
@@ -31,6 +37,8 @@ router.post("/postProduct", postProductController);
 // ? ======= Product ==============
 
 router.get("/getAllCategory", getAllCategoryController);
+
+router.get("/getAllCategoryName", getAllCategoryNameController);
 
 router.post("/addCategory", addCategoryController);
 
@@ -54,7 +62,12 @@ router.post("/postOrder", postOrderController);
 // Get order by ID
 router.post("/getTheOrder", getOrderByIdController);
 
+router.post("/getOrderByOrderId", getOrderByOrderIdController);
+
+// get all oder
+router.get("/getAllOrder", getAllOrderController);
+
 // Update order status
-router.put("/:id/status", updateOrderStatusController);
+router.post("/updateOrderStatus/:id", updateOrderStatusController);
 
 module.exports = router;

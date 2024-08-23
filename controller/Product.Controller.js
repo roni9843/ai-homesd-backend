@@ -15,6 +15,46 @@ const CheckProduct = async (req, res, next) => {
   });
 };
 
+const getAllProductIdController = async (req, res, next) => {
+  try {
+    // Assuming you are using Mongoose for MongoDB
+    const products = await Product.find({}, "_id"); // This will return only the _id field for all products
+
+    // Extracting only the IDs
+    const productIds = products.map((product) => product._id);
+
+    return res.status(200).json({
+      message: "successfully",
+      productIds,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Failed to retrieve product IDs",
+      error: error.message,
+    });
+  }
+};
+
+const getAllCategoryNameController = async (req, res, nest) => {
+  try {
+    // Assuming you are using Mongoose for MongoDB
+    const category = await Category.find({}); // This will return only the _id field for all products
+
+    // Extracting only the IDs
+    const name = category.map((category) => category.category);
+
+    return res.status(200).json({
+      message: "successfully",
+      name,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Failed to retrieve product IDs",
+      error: error.message,
+    });
+  }
+};
+
 /**
  * Get all categories
  */
@@ -332,6 +372,24 @@ const editProfileController = async (req, res, next) => {
 
 // ? =================== order ==================
 
+//  get all order
+
+const getAllOrderController = async (req, res, next) => {
+  try {
+    // Fetch all orders and populate all user and product information
+    const orders = await Order.find()
+      .populate("userId") // Populate all user information
+      .populate("products.product"); // Populate all product information
+
+    // Send the orders as a response
+    res.status(200).json(orders);
+  } catch (error) {
+    // Handle errors
+    console.error("Error fetching orders:", error);
+    res.status(500).json({ message: "Failed to fetch orders", error });
+  }
+};
+
 const postOrderController = async (req, res, next) => {
   const { userId, products, address, totalAmount, paymentMethod } = req.body;
 
@@ -364,6 +422,25 @@ const getOrderByIdController = async (req, res) => {
 
   try {
     const orders = await Order.find({ userId })
+      .populate("products.product")
+      .sort({ createdAt: -1 });
+
+    if (!orders.length) {
+      return res.status(404).json({ message: "No orders found for this user" });
+    }
+    res.json(orders);
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getOrderByOrderIdController = async (req, res) => {
+  const { orderId } = req.body;
+
+  try {
+    const orders = await Order.find({ _id: orderId })
+      .populate("userId") // Populate all user information
       .populate("products.product")
       .sort({ createdAt: -1 });
 
@@ -410,4 +487,8 @@ module.exports = {
   getOrderByIdController,
   getAllCategoryWithProducts,
   editProfileController,
+  getAllOrderController,
+  getOrderByOrderIdController,
+  getAllProductIdController,
+  getAllCategoryNameController,
 };
