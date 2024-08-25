@@ -28,7 +28,7 @@ app.get("/private", (req, res) => {
 //? create root route
 app.get("/", (req, res) => {
   res.send({
-    message: "this is root route for elecEcommerce",
+    message: "this is root route for ai-homesd-backend ",
   });
 });
 
