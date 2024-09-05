@@ -25,36 +25,49 @@ const productSchema = new mongoose.Schema({
   },
   productOffer: {
     type: Number,
-    default: 0, // Default value if no offer is provided
+    default: 0,
   },
   productTag: {
-    type: [String], // Array of strings
+    type: [String],
     default: [],
   },
   images: {
-    type: [String], // Array of image links (strings)
+    type: [String],
     default: [],
   },
   productLive: {
     type: Boolean,
-    default: true, // Default value is true
+    default: true,
   },
   productCode: {
     type: String,
-    required: true, // Assuming this is required
   },
   productTP: {
     type: Number,
-    required: true, // Assuming this is required
   },
   productMRP: {
     type: Number,
-    required: true, // Assuming this is required
   },
   category: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Category", // Reference to the Category model
+    ref: "Category",
     required: true,
+  },
+  shortDescription: {
+    type: String, // Adding short description
+    default: "",
+  },
+  productYoutubeLink: {
+    type: String, // Adding YouTube link
+    default: "",
+  },
+  additionalInfo: {
+    type: String, // Adding additional information
+    default: "",
+  },
+  pdfFileName: {
+    type: String, // Adding PDF file name
+    default: "",
   },
 });
 

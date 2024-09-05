@@ -2,6 +2,8 @@ const Category = require("../models/Category.model");
 const Product = require("../models/Product.model");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const path = require("path");
+const fs = require("fs");
 
 const { v4: uuidv4 } = require("uuid");
 const User = require("../models/User.model");
@@ -134,8 +136,6 @@ const removeCategoryController = async (req, res, next) => {
  */
 
 const postProductController = async (req, res, next) => {
-  console.log(req.body);
-
   try {
     // Extract product data and category from the request body
     const {
@@ -150,8 +150,27 @@ const postProductController = async (req, res, next) => {
       productCode,
       productTP,
       productMRP,
-      category, // Assuming category is provided in the request body
+      category,
+      shortDescription,
+      productYoutubeLink,
+      additionalInfo,
     } = req.body;
+
+    // Handle PDF file upload
+    let pdfFileName = "";
+    if (req.files && req.files.pdfFile) {
+      const pdfFile = req.files.pdfFile;
+      pdfFileName = `${uuidv4()}-${pdfFile.name}`;
+      const uploadPath = path.join(__dirname, "uploads", pdfFileName);
+
+      // Move the file to the uploads directory
+      pdfFile.mv(uploadPath, (err) => {
+        if (err) {
+          console.error("Error uploading PDF file:", err);
+          return res.status(500).send(err);
+        }
+      });
+    }
 
     // Generate a unique product ID
     const productUniqueId = uuidv4();
@@ -170,7 +189,11 @@ const postProductController = async (req, res, next) => {
       productCode,
       productTP,
       productMRP,
-      category: category, // Reference to the category document
+      category: category,
+      shortDescription,
+      productYoutubeLink,
+      additionalInfo,
+      pdfFileName,
     });
 
     // Save the product to the database
@@ -185,7 +208,6 @@ const postProductController = async (req, res, next) => {
     next(error);
   }
 };
-
 /**
  * ? get all product with there category
  */
@@ -223,7 +245,7 @@ const getAllCategoryWithProducts = async (req, res, next) => {
 };
 
 const getProductController = async (req, res, next) => {
-  console.log("get product ");
+  console.log("get product");
 
   try {
     const { category } = req.body;
@@ -244,7 +266,15 @@ const getProductController = async (req, res, next) => {
       products = await Product.find({ category: category, productLive: true });
     }
 
-    return res.status(200).json({ success: true, data: products });
+    // Assuming each product has a field 'pdfFilename' that contains the name of the PDF file
+    const updatedProducts = products.map((product) => {
+      return {
+        ...product.toObject(),
+        pdfFilePath: `/uploads/87654cab-765e-4b5a-b67d-fe2b21431846-DOC-20240225-WA0006..pdf`, // Assuming the product has a 'pdfFilename' field
+      };
+    });
+
+    return res.status(200).json({ success: true, data: updatedProducts });
   } catch (error) {
     // Handle any errors that occur during the database query
     return res
