@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema(
     username: {
       type: String,
       required: true,
-      unique: true,
+      unique: false,
       trim: true,
       minlength: 3,
       maxlength: 50,
@@ -21,13 +21,6 @@ const userSchema = new mongoose.Schema(
         },
         message: (props) => `${props.value} is not a valid phone number!`,
       },
-    },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-      match: [/.+@.+\..+/, "Please fill a valid email address"],
     },
     password: {
       type: String,

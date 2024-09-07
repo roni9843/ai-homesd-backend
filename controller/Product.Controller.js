@@ -308,18 +308,25 @@ const getProductByIdController = async (req, res, next) => {
 // ? =========== auth ============
 
 const signupController = async (req, res) => {
-  const { username, phoneNumber, email, password } = req.body;
+  const { username, phoneNumber, password } = req.body;
 
   try {
+    // Check if phone number already exists in the database
+    const existingUser = await User.findOne({ phoneNumber });
+    if (existingUser) {
+      return res.status(400).json({ message: "Phone number already exists" });
+    }
+
+    // If phone number doesn't exist, proceed to create a new user
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({
       username,
       phoneNumber,
-      email,
       password: hashedPassword,
     });
     await newUser.save();
 
+    // Generate JWT token
     const token = jwt.sign({ id: newUser._id }, "hello", {
       expiresIn: "1h",
     });
@@ -331,19 +338,23 @@ const signupController = async (req, res) => {
 };
 
 const loginController = async (req, res) => {
-  const { email, password } = req.body;
+  const { phoneNumber, password } = req.body;
+
+  console.log("this is body -> ", phoneNumber, password);
 
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ phoneNumber });
 
+    // If phone number doesn't match any user
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ error: "Phone number does not match" });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
+    // If password is incorrect
     if (!isPasswordValid) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(400).json({ error: "Password is incorrect" });
     }
 
     const token = jwt.sign({ id: user._id }, "hello", {
@@ -352,7 +363,7 @@ const loginController = async (req, res) => {
 
     res.status(200).json({ message: "Login successful", token });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -380,13 +391,13 @@ const getTheUserController = async (req, res, next) => {
 
 const editProfileController = async (req, res, next) => {
   const userId = req.body.id; // Assuming user ID is passed in the body
-  const { username, email, phoneNumber } = req.body;
+  const { username, phoneNumber } = req.body;
 
   try {
     // Find user by ID and update their profile
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { username, email, phoneNumber },
+      { username, phoneNumber },
       { new: true, runValidators: true }
     );
 
