@@ -6,15 +6,11 @@ const userSchema = new mongoose.Schema(
     username: {
       type: String,
       required: true,
-      unique: false,
-      trim: true,
-      minlength: 3,
-      maxlength: 50,
     },
     phoneNumber: {
       type: String,
       required: true,
-      unique: true,
+      unique: true, // Phone numbers should still be unique
       validate: {
         validator: function (v) {
           return /\d{10}/.test(v); // Adjust regex based on your phone number format requirement

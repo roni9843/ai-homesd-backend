@@ -8,6 +8,8 @@ const fs = require("fs");
 const { v4: uuidv4 } = require("uuid");
 const User = require("../models/User.model");
 const Order = require("../models/Order.model");
+const { log } = require("console");
+const Email = require("../models/Email.model");
 
 const CheckProduct = async (req, res, next) => {
   const { Check } = req.body; // Assuming userId is provided in the request body
@@ -85,14 +87,14 @@ const getAllCategoryController = async (req, res, next) => {
 const addCategoryController = async (req, res, next) => {
   const { category, image } = req.body;
 
-  // Check if category and image are provided
-  if (!category || !image) {
-    return res.status(400).json({ message: "Category and image are required" });
+  // Check if category is provided
+  if (!category) {
+    return res.status(400).json({ message: "Category is required" });
   }
 
   try {
     // Create a new Category instance
-    const newCategory = new Category({ category, image });
+    const newCategory = new Category({ category, image: image || "" });
 
     // Save the category to the database
     await newCategory.save();
@@ -208,6 +210,85 @@ const postProductController = async (req, res, next) => {
     next(error);
   }
 };
+
+const updateProductController = async (req, res) => {
+  const productId = req.params.id; // Make sure the ID is included in the URL
+
+  try {
+    // Fetch existing product
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    // Extract updated data
+    const {
+      productName,
+      productStock,
+      productDescription,
+      productRegularPrice,
+      productOffer,
+      productTag,
+      shortDescription,
+      productYoutubeLink,
+      additionalInfo,
+      productTP,
+      productMRP,
+    } = req.body;
+
+    // Update product fields
+    product.productName = productName || product.productName;
+    product.productStock = productStock || product.productStock;
+    product.productDescription =
+      productDescription || product.productDescription;
+    product.productRegularPrice =
+      productRegularPrice || product.productRegularPrice;
+    product.productOffer = productOffer || product.productOffer;
+    product.productTag = productTag || product.productTag;
+    product.shortDescription = shortDescription || product.shortDescription;
+    product.productYoutubeLink =
+      productYoutubeLink || product.productYoutubeLink;
+    product.additionalInfo = additionalInfo || product.additionalInfo;
+    product.productTP = productTP || product.productTP;
+    product.productMRP = productMRP || product.productMRP;
+
+    // Handle file uploads if necessary
+    if (req.file) {
+      product.productImage = req.file.path;
+    }
+
+    // Save the updated product
+    await product.save();
+
+    res.status(200).json({ message: "Product updated successfully", product });
+  } catch (error) {
+    console.error("Error updating product:", error);
+    res
+      .status(500)
+      .json({ message: "Error updating product", error: error.message });
+  }
+};
+
+const deleteProductController = async (req, res) => {
+  try {
+    const productId = req.params.id;
+
+    // Find the product by ID and delete it
+    const result = await Product.findByIdAndDelete(productId);
+
+    if (!result) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
+    }
+
+    res.json({ success: true, message: "Product deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting product:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
 /**
  * ? get all product with there category
  */
@@ -311,20 +392,24 @@ const signupController = async (req, res) => {
   const { username, phoneNumber, password } = req.body;
 
   try {
+    console.log("this is user ", username, phoneNumber, password);
     // Check if phone number already exists in the database
     const existingUser = await User.findOne({ phoneNumber });
     if (existingUser) {
+      console.log("this is user 1", username, phoneNumber, password);
       return res.status(400).json({ message: "Phone number already exists" });
     }
-
+    console.log("this is user 22", username, phoneNumber, password);
     // If phone number doesn't exist, proceed to create a new user
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({
-      username,
-      phoneNumber,
+      username: username,
+      phoneNumber: phoneNumber,
       password: hashedPassword,
     });
     await newUser.save();
+
+    console.log(newUser);
 
     // Generate JWT token
     const token = jwt.sign({ id: newUser._id }, "hello", {
@@ -333,6 +418,8 @@ const signupController = async (req, res) => {
 
     res.status(201).json({ message: "User created successfully", token });
   } catch (error) {
+    console.log("this is error ", error);
+
     res.status(500).json({ message: error.message });
   }
 };
@@ -369,6 +456,21 @@ const loginController = async (req, res) => {
 
 // ? ================= user ===================
 
+const getAllUserController = async (req, res, next) => {
+  try {
+    // Find user by ID and populate the orders
+    const user = await User.find();
+
+    if (!user) {
+      return res.status(200).json({ user: null, orderHistory: [] });
+    }
+
+    res.status(200).json({ user });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
 const getTheUserController = async (req, res, next) => {
   const userId = req.body.id; // Assuming user ID is passed in the body
 
@@ -393,7 +495,27 @@ const editProfileController = async (req, res, next) => {
   const userId = req.body.id; // Assuming user ID is passed in the body
   const { username, phoneNumber } = req.body;
 
+  if (username === "" || phoneNumber === "") {
+    console.log(username, phoneNumber);
+
+    return res
+      .status(400)
+      .json({ message: "Phone number and username is require" });
+  }
+
   try {
+    // Check if another user already has this phone number
+    const existingUserWithPhone = await User.findOne({ phoneNumber });
+
+    // If a user with this phone number exists and it's not the current user, return an error
+    if (
+      existingUserWithPhone &&
+      existingUserWithPhone._id.toString() !== userId
+    ) {
+      console.log("existingUserWithPhone -> ", existingUserWithPhone, userId);
+      return res.status(400).json({ message: "Phone number already exists" });
+    }
+
     // Find user by ID and update their profile
     const updatedUser = await User.findByIdAndUpdate(
       userId,
@@ -432,6 +554,8 @@ const getAllOrderController = async (req, res, next) => {
 };
 
 const postOrderController = async (req, res, next) => {
+  console.log("call");
+
   const { userId, products, address, totalAmount, paymentMethod } = req.body;
 
   console.log("log ->", userId, products, address, totalAmount, paymentMethod);
@@ -512,6 +636,58 @@ const updateOrderStatusController = async (req, res) => {
   }
 };
 
+// ? post email
+const postEmailController = async (req, res, next) => {
+  try {
+    // Extract data from the request body
+    const { email, phone, name, message } = req.body;
+
+    // Create a new email document
+    const newEmail = new Email({
+      email,
+      phone,
+      name,
+      message,
+    });
+
+    // Save the email document to the database
+    await newEmail.save();
+
+    // Send a response back to the client
+    res.status(201).json({
+      success: true,
+      message: "Email message sent successfully",
+      data: newEmail,
+    });
+  } catch (error) {
+    // Handle errors and send a response back to the client
+    console.error("Error saving email message:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to send email message",
+      error: error.message,
+    });
+  }
+};
+
+const getAllEmailController = async (req, res, next) => {
+  try {
+    // Retrieve all emails from the database
+    const emails = await Email.find();
+
+    // Send the emails as a JSON response
+    res.status(200).json(emails);
+  } catch (error) {
+    // Handle errors and send a response
+    console.error("Error retrieving emails:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to retrieve emails",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   CheckProduct,
   addCategoryController,
@@ -532,4 +708,9 @@ module.exports = {
   getOrderByOrderIdController,
   getAllProductIdController,
   getAllCategoryNameController,
+  getAllUserController,
+  updateProductController,
+  deleteProductController,
+  postEmailController,
+  getAllEmailController,
 };

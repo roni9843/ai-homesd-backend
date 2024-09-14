@@ -8,7 +8,6 @@ const productSchema = new mongoose.Schema({
   },
   productStock: {
     type: Number,
-    required: true,
   },
   productUniqueId: {
     type: String,
@@ -17,7 +16,6 @@ const productSchema = new mongoose.Schema({
   },
   productDescription: {
     type: String,
-    required: true,
   },
   productRegularPrice: {
     type: Number,

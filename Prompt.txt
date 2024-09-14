@@ -1,0 +1,5 @@
+this is my 
+router.post("/postEmail", postEmailController);
+
+
+

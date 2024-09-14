@@ -18,6 +18,11 @@ const {
   getOrderByOrderIdController,
   getAllProductIdController,
   getAllCategoryNameController,
+  getAllUserController,
+  updateProductController,
+  deleteProductController,
+  postEmailController,
+  getAllEmailController,
 } = require("../controller/Product.Controller");
 
 const router = require("express").Router();
@@ -33,6 +38,10 @@ router.post("/getProduct", getProductController);
 router.post("/getProductById", getProductByIdController);
 
 router.post("/postProduct", postProductController);
+
+router.post("/updateProduct/:id", updateProductController);
+
+router.post("/deleteProduct/:id", deleteProductController);
 
 // ? ======= Product ==============
 
@@ -54,6 +63,8 @@ router.post("/signup", signupController);
 
 router.post("/getTheUser", getTheUserController);
 
+router.get("/getAllUser", getAllUserController);
+
 router.post("/updateUser", editProfileController);
 
 // ? ================== order ============
@@ -69,5 +80,10 @@ router.get("/getAllOrder", getAllOrderController);
 
 // Update order status
 router.post("/updateOrderStatus/:id", updateOrderStatusController);
+
+// ? ==================== Email ==========
+
+router.post("/postEmail", postEmailController);
+router.get("/getAllEmail", getAllEmailController);
 
 module.exports = router;

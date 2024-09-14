@@ -21,6 +21,11 @@ const orderSchema = new mongoose.Schema(
           ref: "Product",
           required: true,
         },
+        price: {
+          type: Number,
+          required: true,
+          set: (value) => parseFloat(value).toFixed(2), // Ensure 2 decimal places
+        },
         qty: {
           type: Number,
           required: true,
@@ -43,6 +48,7 @@ const orderSchema = new mongoose.Schema(
     totalAmount: {
       type: Number,
       required: true,
+      set: (value) => parseFloat(value).toFixed(2), // Ensure 2 decimal places for total amount
     },
     paymentMethod: {
       type: String,
