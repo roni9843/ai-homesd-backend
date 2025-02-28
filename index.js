@@ -4,50 +4,60 @@ const globalError = require("./error/error");
 const connectDb = require("./db/db");
 const config = require("./config/config");
 const router = require("./router/product.router");
-const fileUpload = require("express-fileupload");
 const path = require("path");
+const { uploadImage } = require("./controller/ImageUpload.Controller");
 
-// ^ create app
+// Create app
 const app = express();
 
-// ^ use middleware
-app.use(cors());
-app.use(express.json());
-// Serve static files from the 'uploads' directory
-app.use(
-  "/controller/uploads",
-  express.static(path.join(__dirname, "controller/uploads"))
-);
+// // Use middleware
+// app.use(cors({
+//   origin: "http://localhost:5000", // Allow requests from frontend
+//   methods: ["GET", "POST"], // Specify allowed methods
+//   allowedHeaders: ["Content-Type"], // Allow necessary headers
+// }));
 
-app.use(fileUpload());
+app.use(cors());
+
+app.use(express.urlencoded({ extended: true })); // For form data parsing (optional, not needed for multipart)
+app.use(express.json()); // For JSON data (not needed for file uploads)
+
+// Serve uploaded files statically
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// * Image upload route (uses multer from uploadImage controller)
+app.post("/upload", uploadImage); // Matches frontend fetch URL
+
+// Other routes
 app.use(router);
 
-// ^ custom middleware
+// Custom middleware (if any can go here)
 
-// ! global error
+// Global error handler
 app.use(globalError);
 
-// * private route
+// Private route
 app.get("/private", (req, res) => {
   return res.status(200).json({
-    message: "i am private route",
+    message: "I am a private route",
   });
 });
 
-//? create root route
+// Root route
 app.get("/", (req, res) => {
   res.send({
-    message: "this is root route for ai-homesd-backend ",
+    message: "This is the root route for ai-homesd-backend",
   });
 });
 
-// ? mongodb connect
+// MongoDB connection and server start
 connectDb(config.DB_CONN)
   .then(() => {
-    console.log("database connected");
-    // app lister
+    console.log("Database connected");
     app.listen(config.PORT, () => {
-      console.log(`server is running at ${config.PORT}`);
+      console.log(`Server is running at ${config.PORT}`);
     });
   })
-  .catch((e) => console.log(e));
+  .catch((e) => console.log("Database connection failed:", e));
+
+module.exports = app; // Optional: export app for testing or other modules

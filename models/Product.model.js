@@ -32,6 +32,7 @@ const productSchema = new mongoose.Schema({
   images: {
     type: [String],
     default: [],
+    required: true,
   },
   productLive: {
     type: Boolean,

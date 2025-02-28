@@ -23,7 +23,17 @@ const {
   deleteProductController,
   postEmailController,
   getAllEmailController,
+  postCouponController,
+  UpdateCouponController,
+  validateCouponController,
+  getAllCouponController,
+  updateShippingController,
+  createShippingController,
+  getShippingByIdController,
+  uploadImageController,
+  deleteCouponController
 } = require("../controller/Product.Controller");
+const { uploadImage } = require("../controller/ImageUpload.Controller");
 
 const router = require("express").Router();
 
@@ -37,11 +47,15 @@ router.post("/getProduct", getProductController);
 
 router.post("/getProductById", getProductByIdController);
 
+
 router.post("/postProduct", postProductController);
 
 router.post("/updateProduct/:id", updateProductController);
 
 router.post("/deleteProduct/:id", deleteProductController);
+
+
+
 
 // ? ======= Product ==============
 
@@ -85,5 +99,28 @@ router.post("/updateOrderStatus/:id", updateOrderStatusController);
 
 router.post("/postEmail", postEmailController);
 router.get("/getAllEmail", getAllEmailController);
+
+
+
+// ? ==================== Coupon ==========
+
+router.post("/coupons", postCouponController);
+router.patch("/coupons/:id", UpdateCouponController);
+router.delete("/coupons/:id", deleteCouponController);
+router.get("/coupons/validate/:couponCode", validateCouponController);
+router.get("/coupons", getAllCouponController);
+
+
+// ? ===================== shipping ====================
+
+router.put('/shipping/:id', updateShippingController)
+
+// Route to create a new shipping entry
+router.post('/shipping', createShippingController);
+
+// Route to get a shipping entry by ID
+router.get('/shipping/:id', getShippingByIdController);
+
+
 
 module.exports = router;

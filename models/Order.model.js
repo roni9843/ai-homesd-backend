@@ -55,6 +55,46 @@ const orderSchema = new mongoose.Schema(
       enum: ["Credit Card", "PayPal", "Cash on Delivery"],
       required: true,
     },
+
+    shippingCost:  {
+      type: Number,
+      required: true,
+      set: (value) => parseFloat(value).toFixed(2), // Ensure 2 decimal places for total amount
+    },
+    shippingState: {
+      type: String,
+      required: true,
+    },
+    couponCode:   {
+      type: String,
+      default: null, // Set default value to current date
+    },
+    couponAmount:  {
+      type: Number,
+      set: (value) => parseFloat(value).toFixed(2), // Ensure 2 decimal places for total amount
+      default: 0, // Set default value to current date
+    },
+
+    phoneNumber :  {
+      type: String,
+    },
+    thanaDistrict:  {
+      type: String,
+      default: null, // Set default value to current date
+    },
+    name :  {
+      type: String,
+      default: null, // Set default value to current date
+    },
+    orderNotes :   {
+      type: String,
+      default: null, // Set default value to current date
+    },
+
+
+
+
+
   },
   { timestamps: true }
 );

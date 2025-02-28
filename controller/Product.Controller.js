@@ -4,12 +4,17 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const path = require("path");
 const fs = require("fs");
+const express = require("express");
+const multer = require("multer");
+const cors = require("cors");
 
 const { v4: uuidv4 } = require("uuid");
 const User = require("../models/User.model");
 const Order = require("../models/Order.model");
 const { log } = require("console");
 const Email = require("../models/Email.model");
+const Coupon = require("../models/Coupon.model");
+const Shipping = require("../models/Shipping.model");
 
 const CheckProduct = async (req, res, next) => {
   const { Check } = req.body; // Assuming userId is provided in the request body
@@ -137,6 +142,16 @@ const removeCategoryController = async (req, res, next) => {
  * ? post product
  */
 
+
+
+
+
+
+
+
+
+
+
 const postProductController = async (req, res, next) => {
   try {
     // Extract product data and category from the request body
@@ -214,6 +229,7 @@ const postProductController = async (req, res, next) => {
 const updateProductController = async (req, res) => {
   const productId = req.params.id; // Make sure the ID is included in the URL
 
+  console.log("category -> ", req.body);
   try {
     // Fetch existing product
     const product = await Product.findById(productId);
@@ -234,6 +250,9 @@ const updateProductController = async (req, res) => {
       additionalInfo,
       productTP,
       productMRP,
+      category,
+      productLive,
+      images,
     } = req.body;
 
     // Update product fields
@@ -251,6 +270,9 @@ const updateProductController = async (req, res) => {
     product.additionalInfo = additionalInfo || product.additionalInfo;
     product.productTP = productTP || product.productTP;
     product.productMRP = productMRP || product.productMRP;
+    product.category = category;
+    product.productLive = productLive;
+    product.images = images;
 
     // Handle file uploads if necessary
     if (req.file) {
@@ -554,11 +576,18 @@ const getAllOrderController = async (req, res, next) => {
 };
 
 const postOrderController = async (req, res, next) => {
-  console.log("call");
+  console.log("call ========= > ", req.body);
 
-  const { userId, products, address, totalAmount, paymentMethod } = req.body;
+  const { userId, products, address, totalAmount, paymentMethod,shippingCost,
+    shippingState,
+    couponCode,
+    couponAmount,
+    phoneNumber,
+    thanaDistrict,
+    name,
+    orderNotes, } = req.body;
 
-  console.log("log ->", userId, products, address, totalAmount, paymentMethod);
+ console.log("log ->", userId, products, address, totalAmount, paymentMethod);
 
   if (!userId || !products || !address || !totalAmount || !paymentMethod) {
     return res.status(400).json({ message: "All fields are required" });
@@ -570,6 +599,14 @@ const postOrderController = async (req, res, next) => {
     address,
     totalAmount,
     paymentMethod,
+    shippingCost,
+    shippingState,
+    couponCode,
+    couponAmount,
+    phoneNumber,
+    thanaDistrict,
+    name,
+    orderNotes,
   });
 
   try {
@@ -578,6 +615,9 @@ const postOrderController = async (req, res, next) => {
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
   }
+
+
+
 };
 
 // Get Order by ID
@@ -688,6 +728,183 @@ const getAllEmailController = async (req, res, next) => {
   }
 };
 
+
+
+ // ? ============== coupon =============
+ const postCouponController = async (req, res, next) => {
+  try {
+    const { couponCode, active, discountRate } = req.body;
+
+    const coupon = new Coupon({
+      couponCode,
+      active,
+      discountRate  // Set discount rate from request body or use default
+    });
+
+    const savedCoupon = await coupon.save();
+    res.status(201).json(savedCoupon);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+ const UpdateCouponController = async (req, res, next) => {
+  try {
+    const { active, discountRate } = req.body;  // Get status and discount rate from the body
+
+    // Find coupon by ID and update fields
+    const updatedCoupon = await Coupon.findByIdAndUpdate(
+      req.params.id,
+      {
+        active: active,
+        discountRate: discountRate  // Update discount rate if provided
+      },
+      { new: true }
+    );
+
+    if (!updatedCoupon) {
+      return res.status(404).json({ message: 'Coupon not found' });
+    }
+
+    res.json(updatedCoupon);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+ const deleteCouponController = async (req, res, next) => {
+  try {
+    const couponId = req.params.id;
+
+    // Find and delete the coupon by its ID
+    const deletedCoupon = await Coupon.findByIdAndDelete(couponId);
+
+    if (!deletedCoupon) {
+      return res.status(404).json({ message: 'Coupon not found' });
+    }
+
+    res.json({ message: 'Coupon deleted successfully' });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+ const validateCouponController = async (req, res, next) => {
+  try {
+    const { couponCode } = req.params;
+
+    // Find the coupon by its coupon code
+    const coupon = await Coupon.findOne({ couponCode: couponCode });
+
+    // Check if the coupon exists
+    if (!coupon) {
+      return res.status(404).json({ message: 'Coupon not found' });
+    }
+
+    // Check if the coupon is active
+    if (!coupon.active) {
+      return res.status(400).json({ message: 'Coupon is not active' });
+    }
+
+    // Optionally, check if the discount rate is greater than zero
+    if (coupon.discountRate <= 0) {
+      return res.status(400).json({ message: 'Invalid discount rate on coupon' });
+    }
+
+    // If all checks pass, return success and coupon details
+    res.json({
+      message: 'Coupon is valid',
+      couponCode: coupon.couponCode,
+      discountRate: coupon.discountRate,
+      active: coupon.active
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+
+ const getAllCouponController = async (req, res, next) => {
+  try {
+    const coupons = await Coupon.find();
+    res.json(coupons);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+
+const updateShippingController = async (req, res) => {
+  const { id } = req.params;  // Get the shipping entry ID from the URL
+  const { insideDhaka, outsideDhaka } = req.body;  // Get the new shipping costs from the request body
+
+  try {
+    // Find the shipping entry by ID and update it with the new values
+    const updatedShipping = await Shipping.findByIdAndUpdate(
+      id,
+      {
+        insideDhaka,
+        outsideDhaka
+      },
+      { new: true, runValidators: true } // Return the updated document and run validators
+    );
+
+    if (!updatedShipping) {
+      return res.status(404).json({ message: 'Shipping entry not found' });
+    }
+
+    // Send the updated shipping information as a response
+    res.status(200).json(updatedShipping);
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating shipping', error: error.message });
+  }
+};
+
+
+
+// Controller to create new shipping cost entry
+const createShippingController = async (req, res) => {
+  const { insideDhaka, outsideDhaka } = req.body;
+
+  try {
+    // Create a new shipping entry
+    const newShipping = new Shipping({
+      insideDhaka,
+      outsideDhaka
+    });
+
+    // Save the shipping entry to the database
+    const savedShipping = await newShipping.save();
+
+    // Return the saved shipping data as response
+    res.status(201).json(savedShipping);
+  } catch (error) {
+    res.status(500).json({ message: 'Error creating shipping', error: error.message });
+  }
+};
+
+
+
+
+// Controller to get a shipping entry by ID
+const getShippingByIdController = async (req, res) => {
+  try {
+    const shipping = await Shipping.findById(req.params.id);
+
+    if (!shipping) {
+      return res.status(404).json({ message: 'Shipping entry not found' });
+    }
+
+    res.status(200).json(shipping);
+  } catch (error) {
+    res.status(500).json({ message: 'Error retrieving shipping', error: error.message });
+  }
+};
+
+
+
+
 module.exports = {
   CheckProduct,
   addCategoryController,
@@ -713,4 +930,15 @@ module.exports = {
   deleteProductController,
   postEmailController,
   getAllEmailController,
+  postCouponController,
+  UpdateCouponController,
+  validateCouponController,
+  getAllCouponController,
+  updateShippingController,
+  createShippingController,
+  getShippingByIdController,
+  deleteCouponController,
+
 };
+
+
